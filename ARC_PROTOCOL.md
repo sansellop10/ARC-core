@@ -94,3 +94,7 @@ systemctl --user disable arc.service
 rm ~/.config/systemd/user/arc.service
 systemctl --user daemon-reload
 ```
+
+---
+
+![ARC Banner](img/arc-banner.jpeg)
