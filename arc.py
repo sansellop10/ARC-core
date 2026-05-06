@@ -8,6 +8,7 @@ ARC: Adaptive Resource Controller
 
 import time
 import subprocess
+import notify2
 
 BAT = "/sys/class/power_supply/BAT0/capacity"
 STATUS = "/sys/class/power_supply/BAT0/status"
@@ -16,6 +17,8 @@ last_status = None
 high_sent = False
 low_sent = False
 
+notify2.init("ARC")
+
 def read(path):
     try:
         with open(path) as f:
@@ -23,8 +26,13 @@ def read(path):
     except:
         return None
 
-def notify(title, msg):
-    subprocess.run(["notify-send", title, msg])
+def notify(title, msg, type):
+    n = notify2.Notification(
+        title,
+        msg,
+        type
+    )
+    n.show()
     subprocess.run(["paplay", "/usr/share/sounds/freedesktop/stereo/window-question.oga"])
 
 while True:
@@ -33,12 +41,12 @@ while True:
 
     # avisos por porcentaje
     if level >= 80 and not high_sent:
-        notify("ARC: Batería alta", f"Bateria: {level}% - Desconecta el cargador")
+        notify("Batería alta", f"Bateria: {level}% - Desconecta el cargador", "battery-full")
         high_sent = True
         low_sent = False
 
     elif level <= 30 and not low_sent:
-        notify("ARC: Batería baja", f"Bateria: {level}% - Conecta el cargador")
+        notify("Batería baja", f"Bateria: {level}% - Conecta el cargador", "dialog-warning")
         low_sent = True
         high_sent = False
 
@@ -51,8 +59,8 @@ while True:
         last_status = status
 
         if status == "Charging":
-            notify("ARC: ⚡ Cargando", f"Bateria: {level}%")
+            notify("⚡ Cargando", f"Bateria: {level}%", "dialog-information")
         elif status == "Discharging":
-            notify("ARC: 🔋 Desconectado", f"Bateria: {level}%")
+            notify("🔋 Desconectado", f"Bateria: {level}%", "dialog-information")
 
     time.sleep(30)
