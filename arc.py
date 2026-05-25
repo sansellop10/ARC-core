@@ -1,10 +1,6 @@
 """
-
 ARC: Adaptive Resource Controller
-
-
 """
-
 
 import time
 import subprocess
@@ -13,11 +9,6 @@ import notify2
 BAT = "/sys/class/power_supply/BAT0/capacity"
 STATUS = "/sys/class/power_supply/BAT0/status"
 
-last_status = None
-high_sent = False
-low_sent = False
-
-notify2.init("ARC")
 
 def read(path):
     try:
@@ -26,41 +17,77 @@ def read(path):
     except:
         return None
 
-def notify(title, msg, type):
-    n = notify2.Notification(
-        title,
-        msg,
-        type
-    )
-    n.show()
-    subprocess.run(["paplay", "/usr/share/sounds/freedesktop/stereo/window-question.oga"])
 
-while True:
-    level = int(read(BAT))
-    status = read(STATUS)
+def notify(title, msg, icon):
+    try:
+        n = notify2.Notification(title, msg, icon)
+        n.show()
+    except Exception as e:
+        print("Notify error:", e)
 
-    # avisos por porcentaje
-    if level >= 80 and not high_sent:
-        notify("Batería alta", f"Bateria: {level}% - Desconecta el cargador", "battery-full")
-        high_sent = True
-        low_sent = False
+    subprocess.run([
+        "paplay",
+        "/usr/share/sounds/freedesktop/stereo/window-question.oga"
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    elif level <= 30 and not low_sent:
-        notify("Batería baja", f"Bateria: {level}% - Conecta el cargador", "dialog-warning")
-        low_sent = True
-        high_sent = False
 
-    elif 30 < level < 80:
-        high_sent = False
-        low_sent = False
+def main():
+    notify2.init("ARC")
 
-    # cambios de estado (Charging / Discharging)
-    if status != last_status:
-        last_status = status
+    last_status = read(STATUS)
+    high_sent = False
+    low_sent = False
 
-        if status == "Charging":
-            notify("⚡ Cargando", f"Bateria: {level}%", "dialog-information")
-        elif status == "Discharging":
-            notify("🔋 Desconectado", f"Bateria: {level}%", "dialog-information")
+    while True:
+        level_raw = read(BAT)
+        status = read(STATUS)
 
-    time.sleep(30)
+        if level_raw is None or status is None:
+            time.sleep(30)
+            continue
+
+        try:
+            level = int(level_raw)
+        except:
+            time.sleep(30)
+            continue
+
+        # batería alta
+        if level >= 80 and not high_sent:
+            notify(
+                "Batería alta",
+                f"{level}% - Desconecta el cargador",
+                "battery-full"
+            )
+            high_sent = True
+            low_sent = False
+
+        # batería baja
+        elif level <= 30 and not low_sent:
+            notify(
+                "Batería baja",
+                f"{level}% - Conecta el cargador",
+                "dialog-warning"
+            )
+            low_sent = True
+            high_sent = False
+
+        # rango normal
+        elif 30 < level < 80:
+            high_sent = False
+            low_sent = False
+
+        # cambio de estado
+        if status != last_status:
+            last_status = status
+
+            if status == "Charging":
+                notify("⚡ Cargando", f"{level}%", "dialog-information")
+            elif status == "Discharging":
+                notify("🔋 En batería", f"{level}%", "dialog-information")
+
+        time.sleep(30)
+
+
+if __name__ == "__main__":
+    main()

@@ -73,7 +73,24 @@ systemctl --user start arc.service
 systemctl --user status arc.service
 pgrep -af arc
 ```
+## Actualizar ARC
 
+- Parar el servicio
+```bash id="dep1"
+systemctl --user stop arc.service
+```
+- (Opcional) recargar systemd si cambiaste el .service
+```bash id="dep1"
+systemctl --user daemon-reload
+```
+- Volver a iniciar
+```bash id="dep1"
+systemctl --user start arc.service
+```
+- Verificar
+```bash id="dep1"
+systemctl --user status arc.service
+```
 
 ## Detener o desinstalar ARC
 
